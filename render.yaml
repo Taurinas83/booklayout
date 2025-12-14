@@ -19,5 +19,5 @@ services:
     staticPublishPath: frontend
     buildCommand: echo "Frontend ready"
     routes:
-      - path: /
+      - source: /
         destination: /index.html
