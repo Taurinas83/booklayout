@@ -21,9 +21,16 @@ from epub_generator import EPubGenerator
 app = Flask(__name__)
 CORS(app)
 
-# Configurações
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'outputs'
+# Configuração de Logs
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Configurações de Diretórios
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
+
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'doc'}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
@@ -31,14 +38,22 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
+logger.info(f"Diretório base: {BASE_DIR}")
+logger.info(f"Pasta de uploads: {UPLOAD_FOLDER}")
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Inicializar processadores
-manuscript_processor = ManuscriptProcessor()
-layout_engine = LayoutEngine()
-pdf_generator = PDFGenerator()
-epub_generator = EPubGenerator()
+try:
+    manuscript_processor = ManuscriptProcessor()
+    layout_engine = LayoutEngine()
+    pdf_generator = PDFGenerator()
+    epub_generator = EPubGenerator()
+    logger.info("Processadores inicializados com sucesso")
+except Exception as e:
+    logger.error(f"Erro ao inicializar processadores: {e}")
+    raise e
 
 
 def allowed_file(filename):
@@ -78,7 +93,9 @@ def upload_manuscript():
         file.save(filepath)
         
         # Processar manuscrito
+        logger.info(f"Iniciando processamento do arquivo: {filename}")
         manuscript_data = manuscript_processor.process(filepath)
+        logger.info(f"Manuscrito processado com sucesso: {filename}")
         
         return jsonify({
             'success': True,
@@ -88,8 +105,8 @@ def upload_manuscript():
         }), 200
         
     except Exception as e:
-        print(f"Erro no upload: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Erro no upload: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 

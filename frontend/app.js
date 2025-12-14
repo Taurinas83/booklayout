@@ -251,7 +251,17 @@ async function uploadFile(file) {
     } catch (error) {
         console.error('Erro:', error);
         hideLoading();
-        alert('Erro ao processar arquivo: ' + error.message);
+
+        let errorMsg = error.message;
+        if (error.response) {
+            try {
+                const errData = await error.response.json();
+                errorMsg = errData.error || errorMsg;
+            } catch (e) {
+                // Falha ao parsear erro JSON
+            }
+        }
+        alert('Erro ao processar arquivo: ' + errorMsg);
     }
 }
 

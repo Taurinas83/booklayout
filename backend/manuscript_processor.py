@@ -30,14 +30,17 @@ class ManuscriptProcessor:
         """
         ext = os.path.splitext(filepath)[1].lower()
         
-        if ext == '.txt':
-            content = self._read_txt(filepath)
-        elif ext == '.docx':
-            content = self._read_docx(filepath)
-        elif ext == '.pdf':
-            content = self._read_pdf(filepath)
-        else:
-            raise ValueError(f"Formato não suportado: {ext}")
+        try:
+            if ext == '.txt':
+                content = self._read_txt(filepath)
+            elif ext == '.docx':
+                content = self._read_docx(filepath)
+            elif ext == '.pdf':
+                content = self._read_pdf(filepath)
+            else:
+                raise ValueError(f"Formato não suportado: {ext}")
+        except Exception as e:
+            raise ValueError(f"Erro ao ler arquivo {ext}: {str(e)}")
         
         # Analisar estrutura
         structure = self._analyze_structure(content)
