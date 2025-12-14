@@ -13,8 +13,9 @@ services:
       - key: FLASK_DEBUG
         value: "False"
 
-  - type: static_site
+  - type: web
     name: booklayout-frontend
+    env: static
     staticPublishPath: frontend
     buildCommand: echo "Frontend ready"
     routes:
