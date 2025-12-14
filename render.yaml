@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: booklayout-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn -w 1 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.16
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "False"
+
+  - type: static_site
+    name: booklayout-frontend
+    staticPublishPath: frontend
+    buildCommand: echo "Frontend ready"
+    routes:
+      - path: /
+        destination: /index.html

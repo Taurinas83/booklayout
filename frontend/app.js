@@ -1,0 +1,481 @@
+/**
+ * BookLayout - Frontend Application
+ * Gerencia interface e comunicação com backend
+ */
+
+const API_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://booklayout-backend.onrender.com/api';
+
+// Estado da aplicação
+const appState = {
+    manuscript: null,
+    config: {},
+    templates: [],
+    currentTemplate: null
+};
+
+// Elementos do DOM
+const elements = {
+    uploadArea: document.getElementById('uploadArea'),
+    fileInput: document.getElementById('fileInput'),
+    uploadStatus: document.getElementById('uploadStatus'),
+    statusText: document.getElementById('statusText'),
+    manuscriptInfo: document.getElementById('manuscriptInfo'),
+    navItems: document.querySelectorAll('.nav-item'),
+    sections: document.querySelectorAll('.section'),
+    templatesGrid: document.getElementById('templatesGrid'),
+    generatePreviewBtn: document.getElementById('generatePreviewBtn'),
+    previewContainer: document.getElementById('previewContainer'),
+    previewPages: document.getElementById('previewPages'),
+    exportPdfBtn: document.getElementById('exportPdfBtn'),
+    exportEpubBtn: document.getElementById('exportEpubBtn'),
+    loadingModal: document.getElementById('loadingModal'),
+    loadingText: document.getElementById('loadingText')
+};
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    initializeEventListeners();
+    loadTemplates();
+    setupColorInputs();
+});
+
+/**
+ * Inicializa listeners de eventos
+ */
+function initializeEventListeners() {
+    // Upload
+    elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+    elements.uploadArea.addEventListener('dragover', handleDragOver);
+    elements.uploadArea.addEventListener('dragleave', handleDragLeave);
+    elements.uploadArea.addEventListener('drop', handleDrop);
+    elements.fileInput.addEventListener('change', handleFileSelect);
+
+    // Navegação
+    elements.navItems.forEach(item => {
+        item.addEventListener('click', () => switchSection(item.dataset.section));
+    });
+
+    // Preview
+    elements.generatePreviewBtn.addEventListener('click', generatePreview);
+
+    // Export
+    elements.exportPdfBtn.addEventListener('click', exportPDF);
+    elements.exportEpubBtn.addEventListener('click', exportEPub);
+}
+
+/**
+ * Carrega templates de design
+ */
+async function loadTemplates() {
+    try {
+        const response = await fetch(`${API_BASE}/templates`);
+        const data = await response.json();
+        appState.templates = data.templates;
+        renderTemplates();
+    } catch (error) {
+        console.error('Erro ao carregar templates:', error);
+    }
+}
+
+/**
+ * Renderiza templates de design
+ */
+function renderTemplates() {
+    elements.templatesGrid.innerHTML = '';
+
+    appState.templates.forEach(template => {
+        const card = document.createElement('div');
+        card.className = 'template-card';
+        card.innerHTML = `
+            <h4>${template.name}</h4>
+            <p>${template.description}</p>
+        `;
+
+        card.addEventListener('click', () => selectTemplate(template));
+        elements.templatesGrid.appendChild(card);
+    });
+}
+
+/**
+ * Seleciona um template
+ */
+function selectTemplate(template) {
+    appState.currentTemplate = template;
+
+    // Atualizar UI
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    event.target.closest('.template-card').classList.add('active');
+
+    // Aplicar configurações do template
+    applyTemplateConfig(template.config);
+}
+
+/**
+ * Aplica configurações do template
+ */
+function applyTemplateConfig(config) {
+    document.getElementById('fontFamily').value = config.font_family;
+    document.getElementById('fontSize').value = config.font_size;
+    document.getElementById('lineHeight').value = config.line_height;
+    document.getElementById('marginTop').value = config.margin_top;
+    document.getElementById('marginBottom').value = config.margin_bottom;
+    document.getElementById('marginLeft').value = config.margin_left;
+    document.getElementById('marginRight').value = config.margin_right;
+    document.getElementById('primaryColor').value = config.primary_color;
+    document.getElementById('accentColor').value = config.accent_color;
+    document.getElementById('backgroundColor').value = config.background_color;
+
+    updateColorValues();
+}
+
+/**
+ * Configura inputs de cor
+ */
+function setupColorInputs() {
+    const colorInputs = ['primaryColor', 'accentColor', 'backgroundColor'];
+
+    colorInputs.forEach(id => {
+        const input = document.getElementById(id);
+        input.addEventListener('change', updateColorValues);
+    });
+}
+
+/**
+ * Atualiza valores de cor exibidos
+ */
+function updateColorValues() {
+    document.getElementById('primaryColorValue').textContent =
+        document.getElementById('primaryColor').value;
+    document.getElementById('accentColorValue').textContent =
+        document.getElementById('accentColor').value;
+    document.getElementById('backgroundColorValue').textContent =
+        document.getElementById('backgroundColor').value;
+}
+
+/**
+ * Alterna seção ativa
+ */
+function switchSection(sectionId) {
+    // Atualizar nav items
+    elements.navItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.section === sectionId) {
+            item.classList.add('active');
+        }
+    });
+
+    // Atualizar seções
+    elements.sections.forEach(section => {
+        section.classList.remove('active');
+        if (section.id === sectionId) {
+            section.classList.add('active');
+        }
+    });
+}
+
+/**
+ * Manipula drag over
+ */
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.uploadArea.style.borderColor = '#8b7355';
+    elements.uploadArea.style.backgroundColor = 'rgba(139, 115, 85, 0.05)';
+}
+
+/**
+ * Manipula drag leave
+ */
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    elements.uploadArea.style.borderColor = '#e0e0e0';
+    elements.uploadArea.style.backgroundColor = 'white';
+}
+
+/**
+ * Manipula drop de arquivo
+ */
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        uploadFile(files[0]);
+    }
+
+    elements.uploadArea.style.borderColor = '#e0e0e0';
+    elements.uploadArea.style.backgroundColor = 'white';
+}
+
+/**
+ * Manipula seleção de arquivo
+ */
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        uploadFile(files[0]);
+    }
+}
+
+/**
+ * Faz upload do arquivo
+ */
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    showLoading('Processando manuscrito...');
+
+    try {
+        const response = await fetch(`${API_BASE}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro no upload');
+        }
+
+        const data = await response.json();
+        appState.manuscript = data.manuscript;
+
+        displayManuscriptInfo(data.manuscript);
+        hideLoading();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+        alert('Erro ao processar arquivo: ' + error.message);
+    }
+}
+
+/**
+ * Exibe informações do manuscrito
+ */
+function displayManuscriptInfo(manuscript) {
+    document.getElementById('wordCount').textContent = manuscript.word_count;
+    document.getElementById('charCount').textContent = manuscript.char_count;
+    document.getElementById('chapterCount').textContent =
+        manuscript.structure.chapters.length;
+    document.getElementById('sectionCount').textContent =
+        manuscript.structure.sections.length;
+
+    elements.manuscriptInfo.style.display = 'block';
+}
+
+/**
+ * Coleta configurações do formulário
+ */
+function getConfig() {
+    return {
+        page_width: 210,
+        page_height: 297,
+        margin_top: parseFloat(document.getElementById('marginTop').value),
+        margin_bottom: parseFloat(document.getElementById('marginBottom').value),
+        margin_left: parseFloat(document.getElementById('marginLeft').value),
+        margin_right: parseFloat(document.getElementById('marginRight').value),
+        font_family: document.getElementById('fontFamily').value,
+        font_size: parseFloat(document.getElementById('fontSize').value),
+        line_height: parseFloat(document.getElementById('lineHeight').value),
+        primary_color: document.getElementById('primaryColor').value,
+        accent_color: document.getElementById('accentColor').value,
+        background_color: document.getElementById('backgroundColor').value
+    };
+}
+
+/**
+ * Gera preview do layout
+ */
+async function generatePreview() {
+    if (!appState.manuscript) {
+        alert('Por favor, envie um manuscrito primeiro');
+        return;
+    }
+
+    showLoading('Gerando preview...');
+
+    try {
+        const response = await fetch(`${API_BASE}/preview`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                manuscript: appState.manuscript,
+                config: getConfig()
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao gerar preview');
+        }
+
+        const data = await response.json();
+        displayPreview(data.layout);
+        hideLoading();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+        alert('Erro ao gerar preview: ' + error.message);
+    }
+}
+
+/**
+ * Exibe preview do layout
+ */
+function displayPreview(layout) {
+    elements.previewPages.innerHTML = '';
+    document.getElementById('totalPages').textContent = layout.total_pages;
+
+    // Mostrar apenas as primeiras 5 páginas no preview
+    const pagesToShow = Math.min(5, layout.pages.length);
+
+    for (let i = 0; i < pagesToShow; i++) {
+        const page = layout.pages[i];
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'preview-page';
+
+        let content = '';
+
+        if (page.type === 'cover') {
+            content = '<h1 style="text-align: center; margin-top: 50px;">Capa</h1>';
+        } else if (page.type === 'title_page') {
+            content = '<h1 style="text-align: center;">Folha de Rosto</h1>';
+        } else if (page.type === 'toc') {
+            content = '<h2>Sumário</h2>';
+        } else {
+            page.content.forEach(item => {
+                if (item.type === 'text') {
+                    content += `<p>${item.text}</p>`;
+                } else if (item.type === 'heading') {
+                    content += `<h2>${item.text}</h2>`;
+                }
+            });
+        }
+
+        pageDiv.innerHTML = content + `<div class="preview-page-number">Página ${page.page_number}</div>`;
+        elements.previewPages.appendChild(pageDiv);
+    }
+
+    elements.previewContainer.style.display = 'block';
+}
+
+/**
+ * Exporta para PDF
+ */
+async function exportPDF() {
+    if (!appState.manuscript) {
+        alert('Por favor, envie um manuscrito primeiro');
+        return;
+    }
+
+    const title = document.getElementById('bookTitle').value || 'Livro';
+
+    showLoading('Gerando PDF...');
+
+    try {
+        const response = await fetch(`${API_BASE}/generate-pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                manuscript: appState.manuscript,
+                config: getConfig(),
+                title: title
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao gerar PDF');
+        }
+
+        const blob = await response.blob();
+        downloadFile(blob, `${title}.pdf`);
+        hideLoading();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+        alert('Erro ao gerar PDF: ' + error.message);
+    }
+}
+
+/**
+ * Exporta para ePub
+ */
+async function exportEPub() {
+    if (!appState.manuscript) {
+        alert('Por favor, envie um manuscrito primeiro');
+        return;
+    }
+
+    const title = document.getElementById('bookTitle').value || 'Livro';
+    const author = document.getElementById('bookAuthor').value || 'Autor';
+
+    showLoading('Gerando ePub...');
+
+    try {
+        const response = await fetch(`${API_BASE}/generate-epub`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                manuscript: appState.manuscript,
+                config: getConfig(),
+                title: title,
+                author: author
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao gerar ePub');
+        }
+
+        const blob = await response.blob();
+        downloadFile(blob, `${title}.epub`);
+        hideLoading();
+
+    } catch (error) {
+        console.error('Erro:', error);
+        hideLoading();
+        alert('Erro ao gerar ePub: ' + error.message);
+    }
+}
+
+/**
+ * Faz download de arquivo
+ */
+function downloadFile(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+/**
+ * Mostra modal de carregamento
+ */
+function showLoading(text = 'Processando...') {
+    elements.loadingText.textContent = text;
+    elements.loadingModal.style.display = 'flex';
+}
+
+/**
+ * Esconde modal de carregamento
+ */
+function hideLoading() {
+    elements.loadingModal.style.display = 'none';
+}
