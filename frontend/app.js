@@ -368,9 +368,9 @@ function displayManuscriptInfo(manuscript) {
     document.getElementById('wordCount').textContent = manuscript.word_count;
     document.getElementById('charCount').textContent = manuscript.char_count;
     document.getElementById('chapterCount').textContent =
-        manuscript.structure.chapters.length;
+        (manuscript.structure.chapters || []).length;
     document.getElementById('sectionCount').textContent =
-        manuscript.structure.sections.length;
+        (manuscript.structure.sections || []).length;
 
     elements.manuscriptInfo.style.display = 'block';
 }
