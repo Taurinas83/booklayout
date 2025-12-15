@@ -444,6 +444,10 @@ function displayPreview(layout) {
     elements.previewPages.innerHTML = '';
     document.getElementById('totalPages').textContent = layout.total_pages;
 
+    // Obter configuração atual para aplicar fonte
+    const currentConfig = getConfig();
+    const fontFamily = currentConfig.font_family;
+
     // Mostrar apenas as primeiras 5 páginas no preview
     const pagesToShow = Math.min(5, layout.pages.length);
 
@@ -452,14 +456,39 @@ function displayPreview(layout) {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'preview-page';
 
+        // Aplicar fonte dinâmica
+        pageDiv.style.fontFamily = `"${fontFamily}", serif`;
+
         let content = '';
 
         if (page.type === 'cover') {
-            content = '<h1 style="text-align: center; margin-top: 50px;">Capa</h1>';
+            // Capa agora usa classes CSS
+            const title = page.content.find(i => i.type === 'title')?.text || 'Título';
+            const subtitle = page.content.find(i => i.type === 'subtitle')?.text || '';
+            content = `
+                <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                    <h1 style="font-size: 3em; margin-bottom: 0.5em; color: var(--secondary-color);">${title}</h1>
+                    <p style="font-size: 1.5em; color: var(--primary-color);">${subtitle}</p>
+                </div>
+            `;
         } else if (page.type === 'title_page') {
-            content = '<h1 style="text-align: center;">Folha de Rosto</h1>';
+            const title = page.content.find(i => i.type === 'text' && i.font_size > 20)?.text || 'Título';
+            const author = page.content.find(i => i.type === 'text' && i.font_size < 20)?.text || 'Autor';
+            content = `
+                <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                    <h1 style="font-size: 2em; margin-bottom: 2em; color: var(--primary-color);">${title}</h1>
+                    <p style="font-size: 1.2em;">${author}</p>
+                </div>
+            `;
         } else if (page.type === 'toc') {
-            content = '<h2>Sumário</h2>';
+            content = '<h2 style="text-align: center; margin-bottom: 2em;">Sumário</h2>';
+            page.content.forEach(item => {
+                if (item.type === 'toc_entry') {
+                    const indent = item.indent ? '2em' : '0';
+                    const weight = item.indent ? 'normal' : 'bold';
+                    content += `<p style="margin-left: ${indent}; font-weight: ${weight}; text-indent: 0;">${item.text}</p>`;
+                }
+            });
         } else {
             page.content.forEach(item => {
                 if (item.type === 'text') {
@@ -470,11 +499,11 @@ function displayPreview(layout) {
             });
         }
 
-        pageDiv.innerHTML = content + `<div class="preview-page-number">Página ${page.page_number}</div>`;
+        pageDiv.innerHTML = content + `<div class="preview-page-number">${page.page_number}</div>`;
         elements.previewPages.appendChild(pageDiv);
     }
 
-    elements.previewContainer.style.display = 'block';
+    elements.previewContainer.style.display = 'flex'; // Changed to flex for new CSS
 }
 
 /**
