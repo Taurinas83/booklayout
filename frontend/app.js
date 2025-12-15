@@ -254,7 +254,15 @@ async function uploadFile(file) {
         });
 
         if (!response.ok) {
-            throw response;
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                throw await response.json();
+            } else {
+                // Not JSON (likely HTML 404/500/502 from proxy or static site)
+                const text = await response.text();
+                throw new Error(`Erro do Servidor (${response.status}): ${text.substring(0, 100)}...`);
+            }
         }
 
         const data = await response.json();
@@ -294,7 +302,15 @@ async function handleTextSubmit() {
         });
 
         if (!response.ok) {
-            throw response;
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                throw await response.json();
+            } else {
+                // Not JSON (likely HTML 404/500/502 from proxy or static site)
+                const text = await response.text();
+                throw new Error(`Erro do Servidor (${response.status}): O backend não respondeu corretamente. Verifique se você está na URL correta (Web Service vs Static Site).`);
+            }
         }
 
         const data = await response.json();
