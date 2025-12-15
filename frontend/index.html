@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BookLayout - Diagramação Automática de Livros</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -51,24 +56,25 @@
                 </div>
 
                 <h2>1. Envie seu Manuscrito</h2>
-            <div class="upload-options">
-                <div class="option-card">
-                    <h3>Opção A: Colar Texto (Recomendado)</h3>
-                    <p>Cole o conteúdo do seu livro abaixo.</p>
-                    <textarea id="text-input" placeholder="Cole seu texto aqui... (Capítulo 1, etc)" rows="10" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;"></textarea>
-                    <button id="process-text-btn" class="primary-btn">Processar Texto</button>
-                </div>
+                <div class="upload-options">
+                    <div class="option-card">
+                        <h3>Opção A: Colar Texto (Recomendado)</h3>
+                        <p>Cole o conteúdo do seu livro abaixo.</p>
+                        <textarea id="text-input" placeholder="Cole seu texto aqui... (Capítulo 1, etc)" rows="10"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;"></textarea>
+                        <button id="process-text-btn" class="primary-btn">Processar Texto</button>
+                    </div>
 
-                <div class="option-card" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
-                    <h3>Opção B: Upload de Arquivo</h3>
-                    <div class="upload-area" id="drop-zone">
-                        <input type="file" id="file-input" accept=".txt,.docx,.pdf" hidden>
-                        <div class="icon">📄</div>
-                        <p>Arraste seu arquivo aqui ou clique para selecionar</p>
-                        <span class="sub-text">Suporta .txt, .docx, .pdf</span>
+                    <div class="option-card" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                        <h3>Opção B: Upload de Arquivo</h3>
+                        <div class="upload-area" id="drop-zone">
+                            <input type="file" id="file-input" accept=".txt,.docx,.pdf" hidden>
+                            <div class="icon">📄</div>
+                            <p>Arraste seu arquivo aqui ou clique para selecionar</p>
+                            <span class="sub-text">Suporta .txt, .docx, .pdf</span>
+                        </div>
                     </div>
                 </div>
-            </div>
                 <div id="uploadStatus" class="upload-status" style="display: none;">
                     <div class="status-content">
                         <div class="spinner"></div>
