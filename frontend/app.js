@@ -456,8 +456,14 @@ function displayPreview(layout) {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'preview-page';
 
+        // Determinar fallback correto
+        let fallback = 'serif';
+        if (fontFamily === 'Inter' || fontFamily === 'Segoe UI' || fontFamily === 'Arial') {
+            fallback = 'sans-serif';
+        }
+
         // Aplicar fonte dinâmica
-        pageDiv.style.fontFamily = `"${fontFamily}", serif`;
+        pageDiv.style.fontFamily = `"${fontFamily}", ${fallback}`;
 
         let content = '';
 
