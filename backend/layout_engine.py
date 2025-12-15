@@ -46,6 +46,7 @@ class LayoutEngine:
         pages = self._distribute_content(
             content,
             structure,
+            manuscript.get('metadata', {}),  # Passar metadados
             usable_width,
             usable_height,
             final_config
@@ -69,7 +70,7 @@ class LayoutEngine:
             }
         }
     
-    def _distribute_content(self, content: str, structure: Dict, width: float, 
+    def _distribute_content(self, content: str, structure: Dict, metadata: Dict, width: float, 
                            height: float, config: Dict) -> List[Dict[str, Any]]:
         """
         Distribui conteúdo em páginas
@@ -77,10 +78,10 @@ class LayoutEngine:
         pages = []
         
         # Adicionar capa
-        pages.append(self._create_cover_page(config))
+        pages.append(self._create_cover_page(config, metadata))
         
         # Adicionar folha de rosto
-        pages.append(self._create_title_page(config))
+        pages.append(self._create_title_page(config, metadata))
         
         # Adicionar sumário
         toc_pages = self._create_toc_pages(structure, config)
@@ -167,15 +168,18 @@ class LayoutEngine:
         
         return pages
     
-    def _create_cover_page(self, config: Dict) -> Dict[str, Any]:
+    def _create_cover_page(self, config: Dict, metadata: Dict) -> Dict[str, Any]:
         """Cria página de capa"""
+        title = metadata.get('title', 'Seu Livro')
+        # Se título for muito longo, pode quebrar? O frontend cuida em grande parte, mas aqui definimos o texto.
+        
         return {
             'page_number': 1,
             'type': 'cover',
             'content': [
                 {
                     'type': 'title',
-                    'text': 'Seu Livro',
+                    'text': title,
                     'font_size': 48,
                     'font_family': config['font_family'],
                     'color': config['accent_color'],
@@ -193,15 +197,18 @@ class LayoutEngine:
             'background_color': config['background_color']
         }
     
-    def _create_title_page(self, config: Dict) -> Dict[str, Any]:
+    def _create_title_page(self, config: Dict, metadata: Dict) -> Dict[str, Any]:
         """Cria folha de rosto"""
+        title = metadata.get('title', 'Seu Livro')
+        author = metadata.get('author', 'Autor Desconhecido')
+
         return {
             'page_number': 2,
             'type': 'title_page',
             'content': [
                 {
                     'type': 'text',
-                    'text': 'Seu Livro',
+                    'text': title,
                     'font_size': 32,
                     'font_family': config['font_family'],
                     'color': config['primary_color'],
@@ -209,7 +216,7 @@ class LayoutEngine:
                 },
                 {
                     'type': 'text',
-                    'text': 'Autor',
+                    'text': author,
                     'font_size': 16,
                     'font_family': config['font_family'],
                     'color': config['primary_color'],
