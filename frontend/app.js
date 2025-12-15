@@ -15,8 +15,10 @@ const appState = {
 
 // Elementos do DOM
 const elements = {
-    uploadArea: document.getElementById('uploadArea'),
-    fileInput: document.getElementById('fileInput'),
+    uploadArea: document.getElementById('drop-zone'),
+    fileInput: document.getElementById('file-input'),
+    textInput: document.getElementById('text-input'),
+    processTextBtn: document.getElementById('process-text-btn'),
     uploadStatus: document.getElementById('uploadStatus'),
     statusText: document.getElementById('statusText'),
     manuscriptInfo: document.getElementById('manuscriptInfo'),
@@ -43,12 +45,22 @@ document.addEventListener('DOMContentLoaded', () => {
  * Inicializa listeners de eventos
  */
 function initializeEventListeners() {
+    // Text Processing
+    if (elements.processTextBtn) {
+        elements.processTextBtn.addEventListener('click', handleTextSubmit);
+    }
+
     // Upload
-    elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
-    elements.uploadArea.addEventListener('dragover', handleDragOver);
-    elements.uploadArea.addEventListener('dragleave', handleDragLeave);
-    elements.uploadArea.addEventListener('drop', handleDrop);
-    elements.fileInput.addEventListener('change', handleFileSelect);
+    if (elements.uploadArea) {
+        elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+        elements.uploadArea.addEventListener('dragover', handleDragOver);
+        elements.uploadArea.addEventListener('dragleave', handleDragLeave);
+        elements.uploadArea.addEventListener('drop', handleDrop);
+    }
+
+    if (elements.fileInput) {
+        elements.fileInput.addEventListener('change', handleFileSelect);
+    }
 
     // Navegação
     elements.navItems.forEach(item => {
@@ -237,7 +249,7 @@ async function uploadFile(file) {
         });
 
         if (!response.ok) {
-            throw new Error('Erro no upload');
+            throw response;
         }
 
         const data = await response.json();
@@ -247,24 +259,75 @@ async function uploadFile(file) {
         hideLoading();
 
     } catch (error) {
-        console.error('Erro:', error);
-        hideLoading();
-
-        let errorMsg = error.message;
-        if (error.response) {
-            try {
-                const errData = await error.response.json();
-                errorMsg = errData.error || errorMsg;
-                if (errData.traceback) {
-                    console.error('Backend Traceback:', errData.traceback);
-                    errorMsg += `\n\nDetalhes Técnicos:\n${errData.type}: ${errData.error}`;
-                }
-            } catch (e) {
-                // Falha ao parsear erro JSON
-            }
-        }
-        alert('Erro ao processar arquivo:\n' + errorMsg);
+        handleUploadError(error);
     }
+}
+
+/**
+ * Processa envio de texto direto
+ */
+async function handleTextSubmit() {
+    const text = elements.textInput.value;
+
+    if (!text.trim()) {
+        alert('Por favor, cole algum texto antes de processar.');
+        return;
+    }
+
+    // UI Feedback
+    elements.processTextBtn.disabled = true;
+    elements.processTextBtn.textContent = 'Processando...';
+    showLoading('Processando texto...');
+
+    try {
+        const response = await fetch(`${API_BASE}/upload-text`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) {
+            throw response;
+        }
+
+        const data = await response.json();
+        appState.manuscript = data.manuscript;
+
+        displayManuscriptInfo(data.manuscript);
+        alert('Texto processado com sucesso!');
+
+    } catch (error) {
+        handleUploadError(error);
+    } finally {
+        // Restore UI
+        elements.processTextBtn.disabled = false;
+        elements.processTextBtn.textContent = 'Processar Texto';
+        hideLoading();
+    }
+}
+
+async function handleUploadError(error) {
+    console.error('Erro:', error);
+
+    let errorMsg = error.message || "Erro desconhecido";
+
+    // Tenta extrair mensagem se for um objeto Response
+    if (error.json) {
+        try {
+            const errData = await error.json();
+            errorMsg = errData.error || errorMsg;
+            if (errData.traceback) {
+                console.error('Backend Traceback:', errData.traceback);
+                errorMsg += `\n\nDetalhes Técnicos:\n${errData.type}: ${errData.error}`;
+            }
+        } catch (e) {
+            // Falha ao parsear
+        }
+    }
+
+    alert('Erro ao processar:\n' + errorMsg);
 }
 
 /**
