@@ -18,8 +18,15 @@ from pdf_generator import PDFGenerator
 from epub_generator import EPubGenerator
 
 # Configuração da aplicação
-app = Flask(__name__)
+# Configuração da aplicação
+app = Flask(__name__, 
+            static_folder='../frontend',
+            static_url_path='')
 CORS(app)
+
+@app.route('/')
+def serve_frontend():
+    return send_file(os.path.join(app.static_folder, 'index.html'))
 
 # Configuração de Logs
 import logging

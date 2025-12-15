@@ -3,9 +3,7 @@
  * Gerencia interface e comunicação com backend
  */
 
-const API_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-    ? 'http://localhost:5000/api'
-    : 'https://booklayout-backend.onrender.com/api';
+const API_BASE = '/api';
 
 // Estado da aplicação
 const appState = {

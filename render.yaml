@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: booklayout-backend
+    name: booklayout
     env: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
@@ -12,13 +12,3 @@ services:
         value: production
       - key: FLASK_DEBUG
         value: "False"
-
-  - type: web
-    name: booklayout-frontend
-    env: static
-    staticPublishPath: frontend
-    buildCommand: echo "Frontend ready"
-    routes:
-      - type: rewrite
-        source: /
-        destination: /index.html
