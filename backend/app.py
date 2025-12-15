@@ -12,10 +12,30 @@ from werkzeug.utils import secure_filename
 import traceback
 
 # Importar módulos de processamento
-from manuscript_processor import ManuscriptProcessor
-from layout_engine import LayoutEngine
-from pdf_generator import PDFGenerator
-from epub_generator import EPubGenerator
+# Importar módulos de processamento com segurança
+try:
+    from manuscript_processor import ManuscriptProcessor
+except ImportError as e:
+    print(f"CRITICAL: Failed to import ManuscriptProcessor: {e}")
+    ManuscriptProcessor = None
+
+try:
+    from layout_engine import LayoutEngine
+except ImportError as e:
+    print(f"CRITICAL: Failed to import LayoutEngine: {e}")
+    LayoutEngine = None
+
+try:
+    from pdf_generator import PDFGenerator
+except ImportError as e:
+    print(f"CRITICAL: Failed to import PDFGenerator: {e}")
+    PDFGenerator = None
+
+try:
+    from epub_generator import EPubGenerator
+except ImportError as e:
+    print(f"CRITICAL: Failed to import EPubGenerator: {e}")
+    EPubGenerator = None
 
 # Configuração da aplicação
 # Configuração da aplicação
@@ -52,12 +72,17 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Inicializar processadores
+# Inicializar processadores
 try:
-    manuscript_processor = ManuscriptProcessor()
-    layout_engine = LayoutEngine()
-    pdf_generator = PDFGenerator()
-    epub_generator = EPubGenerator()
-    logger.info("Processadores inicializados com sucesso")
+    manuscript_processor = ManuscriptProcessor() if ManuscriptProcessor else None
+    layout_engine = LayoutEngine() if LayoutEngine else None
+    pdf_generator = PDFGenerator() if PDFGenerator else None
+    epub_generator = EPubGenerator() if EPubGenerator else None
+    
+    if not all([manuscript_processor, layout_engine, pdf_generator, epub_generator]):
+        logger.warning("Alguns processadores não foram carregados corretamente. Verifique os logs.")
+        
+    logger.info("Tentativa de inicialização de processadores concluída")
 except Exception as e:
     logger.error(f"Erro ao inicializar processadores: {e}")
     # Não vamos travar o app aqui, para permitir debug
