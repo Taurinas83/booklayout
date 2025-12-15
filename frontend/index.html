@@ -50,13 +50,25 @@
                     <p>Envie seu arquivo em formato TXT, PDF ou DOCX</p>
                 </div>
 
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📄</div>
-                    <h3>Arraste seu arquivo aqui</h3>
-                    <p>ou clique para selecionar</p>
-                    <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc" hidden>
+                <h2>1. Envie seu Manuscrito</h2>
+            <div class="upload-options">
+                <div class="option-card">
+                    <h3>Opção A: Colar Texto (Recomendado)</h3>
+                    <p>Cole o conteúdo do seu livro abaixo.</p>
+                    <textarea id="text-input" placeholder="Cole seu texto aqui... (Capítulo 1, etc)" rows="10" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;"></textarea>
+                    <button id="process-text-btn" class="primary-btn">Processar Texto</button>
                 </div>
 
+                <div class="option-card" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <h3>Opção B: Upload de Arquivo</h3>
+                    <div class="upload-area" id="drop-zone">
+                        <input type="file" id="file-input" accept=".txt,.docx,.pdf" hidden>
+                        <div class="icon">📄</div>
+                        <p>Arraste seu arquivo aqui ou clique para selecionar</p>
+                        <span class="sub-text">Suporta .txt, .docx, .pdf</span>
+                    </div>
+                </div>
+            </div>
                 <div id="uploadStatus" class="upload-status" style="display: none;">
                     <div class="status-content">
                         <div class="spinner"></div>

@@ -106,6 +106,46 @@ def health():
     return jsonify({'status': 'ok', 'timestamp': datetime.now().isoformat()})
 
 
+@app.route('/api/upload-text', methods=['POST'])
+def upload_text():
+    """
+    Endpoint para processar texto direto (Copy & Paste)
+    """
+    try:
+        data = request.json
+        if not data or 'text' not in data:
+            return jsonify({'error': 'Nenhum texto enviado'}), 400
+            
+        text = data['text']
+        if not text.strip():
+            return jsonify({'error': 'Texto vazio'}), 400
+
+        # Gerar um ID temporário
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+        filename = timestamp + "direct_input.txt"
+        
+        logger.info(f"Processando entrada de texto direto: {len(text)} chars")
+        
+        # Processar texto
+        manuscript_data = manuscript_processor.process_text(text, filename)
+        
+        return jsonify({
+            'success': True,
+            'file_id': filename,
+            'manuscript': manuscript_data,
+            'message': 'Texto processado com sucesso'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Erro no processamento de texto: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "type": type(e).__name__
+        }), 500
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload_manuscript():
     """

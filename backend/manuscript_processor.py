@@ -26,10 +26,13 @@ class ManuscriptProcessor:
             r'^#{3}\s+(.+)',  # Markdown h3
         ]
     
+    
     def process(self, filepath: str) -> Dict[str, Any]:
         """
         Processa arquivo e retorna estrutura do manuscrito
         """
+        # Este método continua existindo para quem ainda quiser usar upload
+        
         ext = os.path.splitext(filepath)[1].lower()
         
         try:
@@ -48,9 +51,23 @@ class ManuscriptProcessor:
         except Exception as e:
             raise ValueError(f"Erro ao ler arquivo {ext}: {str(e)}")
         
+        return self.process_text(content, filepath)
+
+    def process_text(self, content: str, filepath: str = "direct_input.txt") -> Dict[str, Any]:
+        """
+        Processa texto cru diretamente
+        """
         # Analisar estrutura
         structure = self._analyze_structure(content)
-
+        
+        return {
+            'content': content,
+            'structure': structure,
+            'word_count': len(content.split()),
+            'char_count': len(content),
+            'file_path': filepath
+        }
+    
     def _read_docx_fallback(self, filepath: str) -> str:
         """
         Lê arquivo DOCX tratando como ZIP e extraindo XML 
