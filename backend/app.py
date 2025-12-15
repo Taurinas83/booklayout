@@ -52,6 +52,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Inicializar processadores
+try:
+    manuscript_processor = ManuscriptProcessor()
+    layout_engine = LayoutEngine()
+    pdf_generator = PDFGenerator()
+    epub_generator = EPubGenerator()
     logger.info("Processadores inicializados com sucesso")
 except Exception as e:
     logger.error(f"Erro ao inicializar processadores: {e}")
