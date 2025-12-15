@@ -296,10 +296,17 @@ class LayoutEngine:
         font_size: pt
         """
         # Converter largura para pontos (1mm = 2.83pt)
-        width_points = width * 2.83465
+        # Proteção contra valores inválidos
+        safe_width = max(width, 10) # Mínimo 10mm de largura
+        safe_font_size = max(font_size, 6) # Mínimo 6pt
+        
+        width_points = safe_width * 2.83465
         
         # Estimar largura média do caractere (0.6 * font_size é conservador para fontes serifadas)
-        avg_char_width = font_size * 0.6
+        avg_char_width = safe_font_size * 0.6
+        
+        # Proteção contra divisão por zero (redundante com max acima, mas boa prática)
+        if avg_char_width <= 0: avg_char_width = 7.2 # Equivalente a 12pt
         
         chars_per_line = int(width_points / avg_char_width)
         
