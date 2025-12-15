@@ -441,15 +441,21 @@ async function generatePreview() {
  * Exibe preview do layout
  */
 function displayPreview(layout) {
+    if (!layout || !layout.pages) {
+        console.error('Layout inválido recebido:', layout);
+        elements.previewPages.innerHTML = '<p style="padding: 20px; color: red;">Erro ao gerar preview: Dados inválidos.</p>';
+        return;
+    }
+
     elements.previewPages.innerHTML = '';
-    document.getElementById('totalPages').textContent = layout.total_pages;
+    document.getElementById('totalPages').textContent = layout.total_pages || 0;
 
     // Obter configuração atual para aplicar fonte
     const currentConfig = getConfig();
     const fontFamily = currentConfig.font_family;
 
     // Mostrar apenas as primeiras 5 páginas no preview
-    const pagesToShow = Math.min(5, layout.pages.length);
+    const pagesToShow = Math.min(5, (layout.pages || []).length);
 
     for (let i = 0; i < pagesToShow; i++) {
         const page = layout.pages[i];
