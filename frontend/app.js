@@ -474,8 +474,17 @@ function displayPreview(layout) {
             fallback = 'sans-serif';
         }
 
-        // Aplicar fonte dinâmica
+        // Aplicar estilos dinâmicos (Fonte, Tamanho, Altura de Linha) para renderização WYSIWYG
         pageDiv.style.fontFamily = `"${fontFamily}", ${fallback}`;
+        pageDiv.style.fontSize = `${currentConfig.font_size}pt`;
+        pageDiv.style.lineHeight = currentConfig.line_height;
+        pageDiv.style.color = currentConfig.primary_color;
+
+        // Ajustar padding conforme margens
+        pageDiv.style.paddingTop = `${currentConfig.margin_top}mm`;
+        pageDiv.style.paddingBottom = `${currentConfig.margin_bottom}mm`;
+        pageDiv.style.paddingLeft = `${currentConfig.margin_left}mm`;
+        pageDiv.style.paddingRight = `${currentConfig.margin_right}mm`;
 
         let content = '';
 

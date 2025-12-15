@@ -291,22 +291,41 @@ class LayoutEngine:
     
     def _wrap_text(self, text: str, width: float, font_size: float) -> List[str]:
         """
-        Quebra texto em linhas conforme largura disponível
-        Estimativa: ~80 caracteres por linha em 210mm com font 12
+        Quebra texto em linhas conforme largura disponível (estimativa conservadora)
+        width: mm
+        font_size: pt
         """
-        chars_per_line = int((width / 210) * 80)
+        # Converter largura para pontos (1mm = 2.83pt)
+        width_points = width * 2.83465
+        
+        # Estimar largura média do caractere (0.6 * font_size é conservador para fontes serifadas)
+        avg_char_width = font_size * 0.6
+        
+        chars_per_line = int(width_points / avg_char_width)
+        
+        # Garante mínimo de segurança
+        if chars_per_line < 20: chars_per_line = 20
         
         lines = []
         words = text.split()
         current_line = []
         
         for word in words:
-            current_line.append(word)
-            if len(' '.join(current_line)) > chars_per_line:
-                current_line.pop()
+            # Verifica se adicionar a palavra excede o limite (com espaço)
+            line_len = sum(len(w) for w in current_line) + len(current_line) + len(word)
+            
+            if line_len > chars_per_line:
                 if current_line:
                     lines.append(' '.join(current_line))
                 current_line = [word]
+                
+                # Se a palavra sozinha for maior que a linha (caso raro), quebra ela
+                if len(word) > chars_per_line:
+                    # Aqui apenas aceitamos, o CSS vai lidar ou cortará. 
+                    # Complexidade de hifenização backend é alta.
+                    pass
+            else:
+                current_line.append(word)
         
         if current_line:
             lines.append(' '.join(current_line))
