@@ -296,7 +296,16 @@ async function handleTextSubmit() {
         appState.manuscript = data.manuscript;
 
         displayManuscriptInfo(data.manuscript);
-        alert('Texto processado com sucesso!');
+
+        // Auto-generate preview
+        showLoading('Gerando preview automático...');
+        await generatePreview(false); // false para não mostrar alert de erro se já estivermos tratando aqui
+
+        // Switch to preview tab
+        switchSection('preview');
+
+        // Feedback subtle
+        console.log('Texto processado e preview gerado');
 
     } catch (error) {
         handleUploadError(error);
@@ -367,9 +376,9 @@ function getConfig() {
 /**
  * Gera preview do layout
  */
-async function generatePreview() {
+async function generatePreview(showErrorAlert = true) {
     if (!appState.manuscript) {
-        alert('Por favor, envie um manuscrito primeiro');
+        if (showErrorAlert) alert('Por favor, envie um manuscrito primeiro');
         return;
     }
 
