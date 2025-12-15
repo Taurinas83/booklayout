@@ -52,15 +52,47 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Inicializar processadores
-try:
-    manuscript_processor = ManuscriptProcessor()
-    layout_engine = LayoutEngine()
-    pdf_generator = PDFGenerator()
-    epub_generator = EPubGenerator()
     logger.info("Processadores inicializados com sucesso")
 except Exception as e:
     logger.error(f"Erro ao inicializar processadores: {e}")
-    raise e
+    # Não vamos travar o app aqui, para permitir debug
+    pass
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return e
+    # Now you're handling non-HTTP exceptions only
+    logger.error(f"Erro não tratado: {str(e)}")
+    logger.error(traceback.format_exc())
+    return jsonify({
+        "error": str(e),
+        "traceback": traceback.format_exc(),
+        "type": type(e).__name__
+    }), 500
+
+from werkzeug.exceptions import HTTPException
+
+@app.route('/api/debug', methods=['GET'])
+def debug_info():
+    """Rota para verificar estado do servidor"""
+    return jsonify({
+        "status": "online",
+        "cwd": os.getcwd(),
+        "files_in_upload": os.listdir(UPLOAD_FOLDER) if os.path.exists(UPLOAD_FOLDER) else "Folder Missing",
+        "write_test": test_write_permission()
+    })
+
+def test_write_permission():
+    try:
+        test_file = os.path.join(UPLOAD_FOLDER, 'test_write.txt')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        return "OK"
+    except Exception as e:
+        return f"Fail: {str(e)}"
 
 
 def allowed_file(filename):

@@ -255,11 +255,15 @@ async function uploadFile(file) {
             try {
                 const errData = await error.response.json();
                 errorMsg = errData.error || errorMsg;
+                if (errData.traceback) {
+                    console.error('Backend Traceback:', errData.traceback);
+                    errorMsg += `\n\nDetalhes Técnicos:\n${errData.type}: ${errData.error}`;
+                }
             } catch (e) {
                 // Falha ao parsear erro JSON
             }
         }
-        alert('Erro ao processar arquivo: ' + errorMsg);
+        alert('Erro ao processar arquivo:\n' + errorMsg);
     }
 }
 
