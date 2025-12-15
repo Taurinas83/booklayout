@@ -87,7 +87,7 @@ class LayoutEngine:
         pages.extend(toc_pages)
         
         # Distribuir conteúdo principal
-        paragraphs = structure.get('paragraphs', [])
+        chapters = structure.get('chapters', [])
         
         # Calcular linhas por página
         lines_per_page = self._calculate_lines_per_page(height, config['font_size'], config['line_height'])
@@ -95,29 +95,71 @@ class LayoutEngine:
         current_page = None
         current_lines = 0
         
-        for para in paragraphs:
-            para_text = para.get('text', '')
+        for chapter in chapters:
+            # Nova página para cada capítulo
+            if current_page is not None:
+                pages.append(current_page)
             
-            # Quebrar parágrafo em linhas
-            lines = self._wrap_text(para_text, width, config['font_size'])
+            current_page = self._create_page(config, len(pages) + 1)
+            current_lines = 0
             
-            for line in lines:
-                if current_page is None or current_lines >= lines_per_page:
-                    # Nova página
+            # Título do Capítulo (Big Number Style handled in frontend, just pass data)
+            current_page['content'].append({
+                'type': 'chapter_title',
+                'text': chapter['title'],
+                'font_size': config['font_size'] * 2.5,
+                'font_family': config['font_family'],
+                'color': config['primary_color']
+            })
+            current_lines += 5 # Espaço do título
+            
+            # Processar blocos de conteúdo
+            for block in chapter.get('content_blocks', []):
+                
+                # Quebra de página se necessário
+                if current_lines >= lines_per_page:
                     if current_page is not None:
                         pages.append(current_page)
-                    
                     current_page = self._create_page(config, len(pages) + 1)
                     current_lines = 0
-                
-                current_page['content'].append({
-                    'type': 'text',
-                    'text': line,
-                    'font_size': config['font_size'],
-                    'font_family': config['font_family'],
-                    'color': config['primary_color']
-                })
-                current_lines += 1
+
+                if block['type'] == 'paragraph':
+                    # Processamento normal de parágrafo
+                    lines = self._wrap_text(block['text'], width, config['font_size'])
+                    for line in lines:
+                        if current_lines >= lines_per_page:
+                            pages.append(current_page)
+                            current_page = self._create_page(config, len(pages) + 1)
+                            current_lines = 0
+                        
+                        current_page['content'].append({
+                            'type': 'text',
+                            'text': line,
+                            'font_size': config['font_size'],
+                            'font_family': config['font_family'],
+                            'color': config['primary_color']
+                        })
+                        current_lines += 1
+                        
+                elif block['type'] == 'tool':
+                    # Bloco de Ferramenta (não quebra em linhas, passa o bloco inteiro)
+                    # Frontend desenha a caixa
+                    # Estimar tamanho: 2 linhas título + 1 linha por item
+                    tool_height = 2 + len(block['content'])
+                    
+                    if current_lines + tool_height > lines_per_page:
+                         pages.append(current_page)
+                         current_page = self._create_page(config, len(pages) + 1)
+                         current_lines = 0
+                    
+                    current_page['content'].append({
+                        'type': 'tool_block',
+                        'data': block, # Passa estrutura completa da ferramenta
+                        'font_family': config['font_family'],
+                        'color': config['primary_color']
+                    })
+                    current_lines += tool_height
+
         
         # Adicionar última página
         if current_page is not None:

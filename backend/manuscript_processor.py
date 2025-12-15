@@ -53,19 +53,161 @@ class ManuscriptProcessor:
         
         return self.process_text(content, filepath)
 
-    def process_text(self, content: str, filepath: str = "direct_input.txt") -> Dict[str, Any]:
+    def process_text(self, text: str, filename: str) -> Dict[str, Any]:
         """
-        Processa texto cru diretamente
+        Processa texto bruto diretamente
         """
-        # Analisar estrutura
-        structure = self._analyze_structure(content)
+        # Metadados básicos
+        stats = self._calculate_stats(text)
+        
+        # Análise estrutural avançada (Capítulos e Ferramentas)
+        structure = self._analyze_structure_advanced(text)
         
         return {
-            'content': content,
+            'metadata': {
+                'title': filename.replace('.txt', '').replace('_', ' ').title(),
+                'author': 'Autor Desconhecido',
+                'language': 'pt-br'
+            },
+            'stats': stats,
             'structure': structure,
-            'word_count': len(content.split()),
-            'char_count': len(content),
-            'file_path': filepath
+            'content': text
+        }
+
+    def _analyze_structure_advanced(self, text: str) -> Dict[str, Any]:
+        """
+        Analisa estrutura procurando por Capítulos e Ferramentas
+        """
+        lines = text.split('\n')
+        chapters = []
+        current_chapter = {'title': 'Introdução', 'sections': [], 'content_blocks': []}
+        
+        # Patterns
+        tool_keywords = ["Exercício:", "Ferramenta:", "Checklist:", "Reflexão:", "Aplicação:", "Desafio:"]
+        
+        buffer_block = [] # Acumula texto normal
+
+        def flush_buffer():
+            if buffer_block:
+                # Adiciona como parágrafo normal
+                current_chapter['content_blocks'].append({
+                    'type': 'paragraph',
+                    'text': '\n'.join(buffer_block) 
+                })
+                buffer_block.clear()
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            if not line:
+                i += 1
+                continue
+                
+            # Detectar Capítulo (Ex: "CAPÍTULO 1", "1. O Começo")
+            if self._is_chapter_title(line):
+                flush_buffer()
+                if current_chapter['content_blocks'] or current_chapter['title'] != 'Introdução':
+                    chapters.append(current_chapter)
+                
+                current_chapter = {
+                    'title': line,
+                    'sections': [],
+                    'content_blocks': []
+                }
+                i += 1
+                continue
+
+            # Detectar Ferramenta/Exercício
+            is_tool = False
+            for keyword in tool_keywords:
+                if line.upper().startswith(keyword.upper()):
+                    is_tool = True
+                    flush_buffer()
+                    
+                    # Iniciar bloco de ferramenta
+                    tool_block = {
+                        'type': 'tool',
+                        'title': line, # O título é a própria linha (ex: "Exercício: Minha Meta")
+                        'content': []
+                    }
+                    
+                    # Consumir linhas seguintes até encontrar fim da ferramenta (duas quebras de linha ou novo título)
+                    i += 1
+                    while i < len(lines):
+                        tool_line = lines[i].strip()
+                        
+                        # Se linha vazia, verifica se a próxima também é (fim da ferramenta)
+                        if not tool_line:
+                            if i + 1 < len(lines) and not lines[i+1].strip():
+                                break # Duas linhas vazias = fim
+                            # Apenas uma linha vazia, pode ser espaçamento interno
+                            i += 1
+                            continue
+                        
+                        # Se encontrar novo capítulo ou nova ferramenta, para
+                        if self._is_chapter_title(tool_line) or any(tool_line.upper().startswith(k.upper()) for k in tool_keywords):
+                            i -= 1 # Devolve a linha para o loop principal
+                            break
+                            
+                        # Detectar elementos internos da ferramenta
+                        if tool_line.startswith('[ ]') or tool_line.startswith('- [ ]') or tool_line.startswith('[]'):
+                            # Checklist
+                            tool_block['content'].append({
+                                'type': 'checklist_item',
+                                'text': tool_line.replace('[ ]', '').replace('- [ ]', '').replace('[]', '').strip()
+                            })
+                        elif '_____' in tool_line:
+                            # Linha de escrita
+                            tool_block['content'].append({
+                                'type': 'writing_line',
+                                'text': tool_line.replace('_', '').strip(), # Texto antes da linha
+                                'lines': 1 # Default
+                            })
+                        elif '(1-5)' in tool_line or '(1-10)' in tool_line:
+                             # Escala
+                             max_scale = 10 if '(1-10)' in tool_line else 5
+                             tool_block['content'].append({
+                                'type': 'rating_scale',
+                                'text': tool_line.replace('(1-5)', '').replace('(1-10)', '').strip(),
+                                'max': max_scale
+                            })
+                        else:
+                            # Texto instrucional da ferramenta
+                            tool_block['content'].append({
+                                'type': 'instruction',
+                                'text': tool_line
+                            })
+                        
+                        i += 1
+                    
+                    current_chapter['content_blocks'].append(tool_block)
+                    break # Sai do loop de keywords e volta para o while principal
+            
+            if not is_tool:
+                # Se não é ferramenta nem título, é texto normal
+                buffer_block.append(line)
+                i += 1
+        
+        flush_buffer()
+        if current_chapter['content_blocks'] or current_chapter['title'] != 'Introdução':
+            chapters.append(current_chapter)
+            
+        return {
+            'chapters': chapters,
+            'paragraphs': [] # Mantendo compatibilidade, mas vazio pois usamos content_blocks
+        }
+
+    def _is_chapter_title(self, line: str) -> bool:
+        line = line.upper()
+        return line.startswith('CAPÍTULO') or line.startswith('INTRODUÇÃO') or line.startswith('PREFÁCIO') or (len(line) < 50 and line[0].isdigit() and '.' in line)
+
+    def _calculate_stats(self, text: str) -> Dict[str, Any]:
+        """Calcula estatísticas básicas do texto."""
+        return {
+            'word_count': len(text.split()),
+            'char_count': len(text),
+            'line_count': len(text.split('\n'))
         }
     
     def _read_docx_fallback(self, filepath: str) -> str:

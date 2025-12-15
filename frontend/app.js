@@ -501,6 +501,58 @@ function displayPreview(layout) {
                     content += `<p>${item.text}</p>`;
                 } else if (item.type === 'heading') {
                     content += `<h2>${item.text}</h2>`;
+                } else if (item.type === 'chapter_title') {
+                    // Tentar extrair número para efeito "Big Number"
+                    // Ex: "Capítulo 1", "1. Introdução"
+                    const match = item.text.match(/(\d+)/);
+                    const number = match ? match[0] : '';
+                    // Remove numero e palavras comuns do título visual
+                    const text = item.text.replace(/capítulo/gi, '').replace(number, '').replace(/^[.\-\s]+/, '').trim();
+
+                    if (number) {
+                        content += `
+                            <div class="chapter-header-container">
+                                <div class="big-chapter-number">${number.padStart(2, '0')}</div>
+                                <div class="chapter-title-text">${text || 'Capítulo'}</div>
+                            </div>
+                        `;
+                    } else {
+                        // Sem número, renderiza normal mas elegante
+                        content += `<h2 style="font-size: 2.5em; text-align: center; margin-bottom: 2em; font-family: 'Playfair Display', serif;">${item.text}</h2>`;
+                    }
+                } else if (item.type === 'tool_block') {
+                    // Renderizar Ferramenta
+                    const tool = item.data;
+                    let toolContent = `<div class="tool-box"><div class="tool-title">${tool.title.replace(/Exercício:|Ferramenta:|Checklist:/i, '').trim()}</div>`;
+
+                    tool.content.forEach(toolItem => {
+                        if (toolItem.type === 'instruction') {
+                            toolContent += `<div class="tool-instruction">${toolItem.text}</div>`;
+                        } else if (toolItem.type === 'checklist_item') {
+                            toolContent += `
+                                <div class="checklist-item">
+                                    <div class="checkbox-box"></div>
+                                    <span>${toolItem.text}</span>
+                                </div>`;
+                        } else if (toolItem.type === 'writing_line') {
+                            toolContent += `
+                                <div class="writing-line-container">
+                                    <p>${toolItem.text}</p>
+                                    <div class="writing-line"></div>
+                                </div>`;
+                        } else if (toolItem.type === 'rating_scale') {
+                            let circles = '';
+                            for (let j = 1; j <= toolItem.max; j++) {
+                                circles += `<div class="rating-circle">${j}</div>`;
+                            }
+                            toolContent += `
+                                <div style="text-align:center; margin-top:10px;">${toolItem.text}</div>
+                                <div class="rating-scale">${circles}</div>`;
+                        }
+                    });
+
+                    toolContent += `</div>`;
+                    content += toolContent;
                 }
             });
         }
