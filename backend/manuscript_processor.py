@@ -199,8 +199,25 @@ class ManuscriptProcessor:
         }
 
     def _is_chapter_title(self, line: str) -> bool:
-        line = line.upper()
-        return line.startswith('CAPÍTULO') or line.startswith('INTRODUÇÃO') or line.startswith('PREFÁCIO') or (len(line) < 50 and line[0].isdigit() and '.' in line)
+        line = line.upper().strip()
+        # Palavras-chave exatas de seções de livro
+        standard_sections = [
+            'INTRODUÇÃO', 'PREFÁCIO', 'PRÓLOGO', 'DEDICATÓRIA', 'AGRADECIMENTOS', 
+            'EPÍLOGO', 'POSFÁCIO', 'CONCLUSÃO', 'BIBLIOGRAFIA', 'REFERÊNCIAS', 
+            'APÊNDICE', 'ANEXOS', 'SUMÁRIO', 'ÍNDICE'
+        ]
+        
+        # Verifica se é uma seção padrão (correspondência exata ou sufixada, ex: "APÊNDICE A")
+        for section in standard_sections:
+            if line == section or line.startswith(section + ' '):
+                return True
+
+        # Verifica padrões de capítulo numerado
+        return (
+            line.startswith('CAPÍTULO') or 
+            line.startswith('CHAPTER') or
+            (len(line) < 50 and line[0].isdigit() and '.' in line) # Ex: "1. O Começo"
+        )
 
     def _calculate_stats(self, text: str) -> Dict[str, Any]:
         """Calcula estatísticas básicas do texto."""

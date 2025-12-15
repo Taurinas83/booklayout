@@ -145,6 +145,12 @@ function applyTemplateConfig(config) {
     document.getElementById('backgroundColor').value = config.background_color;
 
     updateColorValues();
+
+    // Auto-update preview e mostra feedback
+    console.log('Template aplicado:', config);
+    if (appState.manuscript) {
+        generatePreview().catch(err => console.error('Erro no preview automático:', err));
+    }
 }
 
 /**
