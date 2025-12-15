@@ -22,7 +22,7 @@ from epub_generator import EPubGenerator
 app = Flask(__name__, 
             static_folder='../frontend',
             static_url_path='')
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
 def serve_frontend():

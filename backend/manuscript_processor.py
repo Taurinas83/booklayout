@@ -8,6 +8,8 @@ import re
 from docx import Document
 import PyPDF2
 from typing import Dict, List, Any
+import zipfile
+import xml.etree.ElementTree as ET
 
 
 class ManuscriptProcessor:
@@ -34,7 +36,11 @@ class ManuscriptProcessor:
             if ext == '.txt':
                 content = self._read_txt(filepath)
             elif ext == '.docx':
-                content = self._read_docx(filepath)
+                try:
+                    content = self._read_docx(filepath)
+                except Exception as e:
+                    print(f"Erro ao ler DOCX com biblioteca padrão: {e}. Tentando fallback...")
+                    content = self._read_docx_fallback(filepath)
             elif ext == '.pdf':
                 content = self._read_pdf(filepath)
             else:
@@ -44,6 +50,31 @@ class ManuscriptProcessor:
         
         # Analisar estrutura
         structure = self._analyze_structure(content)
+
+    def _read_docx_fallback(self, filepath: str) -> str:
+        """
+        Lê arquivo DOCX tratando como ZIP e extraindo XML 
+        (Fallback seguro se python-docx falhar)
+        """
+        try:
+            with zipfile.ZipFile(filepath) as z:
+                xml_content = z.read('word/document.xml')
+                root = ET.fromstring(xml_content)
+                
+                # Namespace do Word
+                ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+                
+                text_content = []
+                for p in root.findall('.//w:p', ns):
+                    texts = p.findall('.//w:t', ns)
+                    if texts:
+                        para_text = ''.join([t.text for t in texts if t.text])
+                        if para_text.strip():
+                            text_content.append(para_text)
+                            
+            return '\n\n'.join(text_content)
+        except Exception as e:
+            raise ValueError(f"Falha crítica no fallback de leitura: {str(e)}")
         
         return {
             'content': content,
