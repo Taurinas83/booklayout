@@ -68,7 +68,12 @@ function initializeEventListeners() {
     });
 
     // Preview
-    elements.generatePreviewBtn.addEventListener('click', generatePreview);
+    elements.generatePreviewBtn.addEventListener('click', () => {
+        generatePreview().catch(err => {
+            console.error(err);
+            alert('Erro ao gerar preview: ' + (err.message || err.error || 'Erro desconhecido'));
+        });
+    });
 
     // Export
     elements.exportPdfBtn.addEventListener('click', exportPDF);
@@ -299,7 +304,7 @@ async function handleTextSubmit() {
 
         // Auto-generate preview
         showLoading('Gerando preview automático...');
-        await generatePreview(false); // false para não mostrar alert de erro se já estivermos tratando aqui
+        await generatePreview();
 
         // Switch to preview tab
         switchSection('preview');
@@ -308,6 +313,7 @@ async function handleTextSubmit() {
         console.log('Texto processado e preview gerado');
 
     } catch (error) {
+        // Agora qualquer erro (upload ou preview) cai aqui e mostra alerta
         handleUploadError(error);
     } finally {
         // Restore UI
@@ -376,13 +382,16 @@ function getConfig() {
 /**
  * Gera preview do layout
  */
-async function generatePreview(showErrorAlert = true) {
+async function generatePreview() {
     if (!appState.manuscript) {
-        if (showErrorAlert) alert('Por favor, envie um manuscrito primeiro');
-        return;
+        throw new Error('Por favor, envie um manuscrito primeiro');
     }
 
-    showLoading('Gerando preview...');
+    // Nota: O loading deve ser gerenciado por quem chama esta função, 
+    // ou garantimos que não conflite com o loading do processo principal.
+    // Mas para manter compatibilidade com o botão direto de "Gerar Preview":
+    const isAutoProcess = elements.loadingModal.style.display === 'flex';
+    if (!isAutoProcess) showLoading('Gerando preview...');
 
     try {
         const response = await fetch(`${API_BASE}/preview`, {
@@ -397,17 +406,18 @@ async function generatePreview(showErrorAlert = true) {
         });
 
         if (!response.ok) {
-            throw new Error('Erro ao gerar preview');
+            throw await response.json(); // Tenta pegar erro detalhado
         }
 
         const data = await response.json();
         displayPreview(data.layout);
-        hideLoading();
+
+        if (!isAutoProcess) hideLoading();
+        return true;
 
     } catch (error) {
-        console.error('Erro:', error);
-        hideLoading();
-        alert('Erro ao gerar preview: ' + error.message);
+        if (!isAutoProcess) hideLoading();
+        throw error; // Propaga erro para ser tratado no handleTextSubmit ou no clique do botão
     }
 }
 
